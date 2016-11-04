@@ -2,11 +2,11 @@ import numpy as np
 from math import sin, cos, pi, sqrt
 
 # here we create a var for how many times we want to in the model
-samples = 1000
+samples = 10
 
 # we need to keep track of time for each the cubesats
-timeStep = 60       # secs
-timeFinal = 60*60*24*14 # this is two weeks in seconds
+timeStep = 60               # secs
+timeFinal = 60*60*24*14     # this is two weeks in seconds
 timeArray = np.arange(0, timeFinal, timeStep)
 
 # this is just an array of random values for the magnitude of velocity
@@ -14,10 +14,42 @@ velMag = np.random.uniform(0.8, 1.2, size=samples)    # this is in m/s
 
 # setting initial orbit parameters
 initialEcc = 0
-stdGravPar = 3.98574405 * 10**14        # (m^3)/(s^2)
+stdGravPar = 3.98574405 * 10**14            # (m^3)/(s^2)
 initialRadius = 500000 + 6371000            # m
+
+# here we will create functions for some of the eqns that we use multiple times
+
+def angular_momentum_cross(position, velocity):
+    '''this function take the position and velocity a point and find the magnitude of the angular momentum'''
+    return np.cross(position, velocity)
+
+def orbit_period(angularMomentum, eccentricity):
+    '''simple eqn to find the period of an orbit.'''
+    return ((angularMomentum**2)/stdGravPar)*(1/(1 - eccentricity**2))
+
+def orbit_eccentricity(velocity, angularMomentum):
+    '''this function finds the eccentricity for an orbit'''
+    return velocity[1] * (angularMomentum/stdGravPar) - 1
+
+def position_function(angularMomentum, eccentricity, period):
+    ''' this function takes in angular momentum, eccentricity and period and returns
+        an array for the x and y values in a numpy array.'''
+    pos = np.array([])
+
+    # the two following for loops find the position of the two cubesats at for the
+    # timeArray and place them into their own arrays
+    for i in range(timeArray.size):
+        tempPos = ((angularMomentum ** 2) / stdGravPar) * (
+            1 / (1 + eccentricity * cos((timeArray[i] / periodSC1) * (2 * pi)))) * np.array(
+            [cos((timeArray[i] / periodSC1) * (2 * pi)), sin((timeArray[i] / period) * (2 * pi))])
+        pos = np.append(pos, tempPos)
+
+    # appending the array just makes it 1D, here with are separating x and y
+    # into two different columns
+    return np.reshape(pos, (timeArray.size, 2))
+
 initialAngMo = sqrt(initialRadius*(stdGravPar*(1 + initialEcc * cos(0))))
-initialPeriod = ((initialAngMo**2)/stdGravPar)*(1/(1 - initialEcc**2))
+initialPeriod = orbit_period(initialAngMo, initialEcc)
 initialVel = np.array([0, (initialEcc + cos(0))]) * (stdGravPar/initialAngMo)
 initialDis = np.array([initialRadius, 0])
 
@@ -34,31 +66,16 @@ for n in range(samples):
     initialVelSC2 = initialVel - np.array([0, velMag[n]])
 
     # now we will solve for the e, h and T for the new orbits
-    angMoSC1 = np.cross(initialDis, initialVelSC1)
-    angMoSC2 = np.cross(initialDis, initialVelSC2)
-    eccSC1 = initialVelSC1[1] * (angMoSC1/stdGravPar) - 1
-    eccSC2 = initialVelSC2[1] * (angMoSC2/stdGravPar) - 1
-    periodSC1 = ((angMoSC1**2)/stdGravPar)*(1/(1 - eccSC1**2))
-    periodSC2 = ((angMoSC2**2)/stdGravPar)*(1/(1 - eccSC2**2))
+    angMoSC1 = angular_momentum_cross(initialDis, initialVelSC1)
+    angMoSC2 = angular_momentum_cross(initialDis, initialVelSC2)
+    eccSC1 = orbit_eccentricity(initialVelSC1, angMoSC1)
+    eccSC2 = orbit_eccentricity(initialVelSC2, angMoSC2)
+    periodSC1 = orbit_period(angMoSC1, eccSC1)
+    periodSC2 = orbit_period(angMoSC2, eccSC2)
 
-    # similar to result array above these position arrays need to be created empty
-    # outside of this loop so that they can appended inside
-    disSC1 = np.array([])
-    disSC2 = np.array([])
-
-    # the two following for loops find the position of the two cubesats at for the
-    # timeArray and place them into their own arrays
-    # todo: make this into a function
-    for i in range(timeArray.size):
-        tempDis1 = ((angMoSC1**2)/stdGravPar) * (1/(1 + eccSC1*cos((timeArray[i]/periodSC1)*(2*pi)))) * np.array([cos((timeArray[i]/periodSC1)*(2*pi)), sin((timeArray[i]/periodSC1)*(2*pi))])
-        disSC1 = np.append(disSC1, tempDis1)
-        
-        tempDis2 = ((angMoSC2**2)/stdGravPar) * (1/(1 + eccSC2*cos((timeArray[i]/periodSC2)*(2*pi)))) * np.array([cos((timeArray[i]/periodSC2)*(2*pi)), sin((timeArray[i]/periodSC2)*(2*pi))])
-        disSC2 = np.append(disSC2, tempDis2)
-    # appending the array just makes it 1D, here with are separating x and y
-    # into two different columns
-    disSC1 = np.reshape(disSC1, (timeArray.size, 2))
-    disSC2 = np.reshape(disSC2, (timeArray.size, 2))
+    # find the position of the satellites for each time step.
+    posSC1 = position_function(angMoSC1, eccSC1, periodSC1)
+    posSC2 = position_function(angMoSC2, eccSC2, periodSC2)
 
     # now we measure the distance between the two cubesats at each point in time
     # and then see if they are within 1 km. if they are a counter is incremented
@@ -66,7 +83,7 @@ for n in range(samples):
     # within 1 km of each other
     timeCounter = 0
     for i in range(timeArray.size):
-        distance = sqrt((disSC2[i, 0] - disSC1[i, 0])**2 + (disSC2[i, 1] - disSC1[i, 1])**2)
+        distance = sqrt((posSC2[i, 0] - posSC1[i, 0])**2 + (posSC2[i, 1] - posSC1[i, 1])**2)
 
         if distance <= 1000:
             timeCounter += 1
