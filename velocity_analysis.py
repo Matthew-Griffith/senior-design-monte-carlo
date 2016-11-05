@@ -2,7 +2,7 @@ import numpy as np
 from math import sin, cos, pi, sqrt
 
 # here we create a var for how many times we want to in the model
-samples = 10
+samples = 1000
 
 # we need to keep track of time for each the cubesats
 timeStep = 60               # secs
@@ -10,7 +10,7 @@ timeFinal = 60*60*24*14     # this is two weeks in seconds
 timeArray = np.arange(0, timeFinal, timeStep)
 
 # this is just an array of random values for the magnitude of velocity
-velMag = np.random.uniform(0.8, 1.2, size=samples)    # this is in m/s
+velMag = np.random.normal(1.0, 0.1, samples)    # this is in m/s
 
 # setting initial orbit parameters
 initialEcc = 0
@@ -40,8 +40,8 @@ def position_function(angularMomentum, eccentricity, period):
     # timeArray and place them into their own arrays
     for i in range(timeArray.size):
         tempPos = ((angularMomentum ** 2) / stdGravPar) * (
-            1 / (1 + eccentricity * cos((timeArray[i] / periodSC1) * (2 * pi)))) * np.array(
-            [cos((timeArray[i] / periodSC1) * (2 * pi)), sin((timeArray[i] / period) * (2 * pi))])
+            1 / (1 + eccentricity * cos((timeArray[i] / period) * (2 * pi)))) * np.array(
+            [cos((timeArray[i] / period) * (2 * pi)), sin((timeArray[i] / period) * (2 * pi))])
         pos = np.append(pos, tempPos)
 
     # appending the array just makes it 1D, here with are separating x and y
@@ -95,4 +95,3 @@ for n in range(samples):
 # file for further analysis
 result = np.reshape(result, (samples, 2))
 np.save('testing', result)
-
