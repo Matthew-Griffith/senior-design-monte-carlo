@@ -1,13 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# from scipy import stats
-import matplotlib.mlab as mlab
+# import matplotlib.mlab as mlab
 
 results = np.load('testing.npy')
 time1km = results[:, 1]
 cases = np.arange(0, 1000)
-stdDeviation = np.std(time1km)
-mean = np.mean(time1km)
+# stdDeviation = np.std(time1km)
+# mean = np.mean(time1km)
 
 # plt.plot(cases, time1km, label='Raw Data', marker='.', linestyle='none')
 plt.hist(time1km, bins=45)
@@ -20,5 +19,5 @@ plt.xlabel('Time within 1 km [secs]')
 plt.ylabel('cases')
 plt.legend(loc='upper right')
 plt.grid()
-# plt.savefig('1000_samples_lin_regression.png')
+plt.savefig('histogram_velocity_magnitude.png')
 plt.show()
