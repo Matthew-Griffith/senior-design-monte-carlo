@@ -8,9 +8,9 @@ cases = np.arange(0, 1000)
 stdDeviation = np.std(time1km)
 mean = np.mean(time1km)
 
-plt.hist(time1km, bins=45, normed=True, facecolor='blue')
+plt.hist(time1km, bins=45, facecolor='blue')
 x = np.sort(time1km)
-y = mlab.normpdf(x, mean, stdDeviation)
+y = (mlab.normpdf(x, mean, stdDeviation))*(65/(1.30081002398*10**(-5)))
 plt.plot(x, y, 'r+', linewidth=1, label='Normal Distribution')
 
 plt.title('Monte Carlo Analysis for Velocity Magnitude')
