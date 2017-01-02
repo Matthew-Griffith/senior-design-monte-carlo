@@ -20,3 +20,8 @@ plt.legend(loc='upper right')
 plt.grid()
 plt.savefig('histogram_velocity_magnitude.png')
 plt.show()
+
+print(max(time1km))
+print(min(time1km))
+print(mean)
+print(stdDeviation)
